@@ -1,0 +1,127 @@
+Create a clean RAG pipeline module in Python.
+
+Functions required:
+
+ingest_document(text, doc_name)
+- chunk text
+- embed chunks
+- store in chromadb with metadata doc_name
+
+query_documents(question)
+- embed question
+- retrieve top 3 chunks
+- call LLM with prompt template
+- return answer + sources
+
+Use:
+- chromadb persistent client
+- OpenAI embeddings
+- OpenAI chat completion
+
+Include prompt template that forces grounded answers only from context.
+If answer not found → say "Not found in documents".
+
+
+
+==================================================================================
+
+
+
+Create a minimal HTML + JS frontend for a FastAPI RAG app.
+
+Pages:
+
+Home page:
+- upload document form
+- list uploaded documents
+- question input
+- answer display
+- sources display
+
+Status page:
+- calls /health endpoint
+- shows green/red status for:
+  backend
+  vector db
+  llm key
+
+Use:
+- vanilla HTML
+- minimal CSS
+- fetch API
+- no frameworks
+
+Must be clean and readable.
+
+
+
+===========================================================================
+
+
+
+
+Write a professional README.md for a Private Knowledge Q&A web app.
+
+Include:
+- project overview
+- features
+- architecture
+- how to run locally
+- docker run instructions
+- environment variables
+- hosting instructions (Render)
+- what is implemented
+- what is not implemented
+
+
+
+===========================================================================
+
+
+Write AI_NOTES.md explaining:
+
+- which AI tools were used
+- what they were used for
+- what was manually verified
+- what code was edited by hand
+- LLM provider used and why
+- embedding model used and why
+
+Keep honest and professional.
+
+
+
+
+
+==============================================================================
+
+
+
+
+
+
+
+
+Generate a PROMPTS_USED.md template that logs prompts used during development.
+
+Sections:
+- backend prompts
+- frontend prompts
+- docker prompts
+- debugging prompts
+
+Leave placeholders for user to paste prompts.
+Do not include AI responses.
+
+
+==========================================================================
+Create ABOUTME.md template with:
+
+- name
+- short bio
+- skills
+- projects
+- contact
+- resume link placeholder
+
+

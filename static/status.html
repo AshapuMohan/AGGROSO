@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Status - Private Knowledge Q&A</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <div class="nav">
+        <a href="/">Home</a>
+        <a href="/static/status.html">System Status</a>
+    </div>
+
+    <div class="container">
+        <h1>System Status</h1>
+
+        <div id="statusContainer">
+            <div class="status-item">
+                <span>Backend API</span>
+                <span id="backendStatus">Checking...</span>
+            </div>
+            <div class="status-item">
+                <span>Vector DB (Chroma)</span>
+                <span id="chromaStatus">Checking...</span>
+            </div>
+            <div class="status-item">
+                <span>LLM API Key</span>
+                <span id="llmStatus">Checking...</span>
+            </div>
+        </div>
+
+        <button onclick="checkHealth()" style="margin-top: 20px;">Refresh Status</button>
+    </div>
+
+    <script src="/static/script.js"></script>
+    <script>
+        // Auto-run check on load for status page
+        document.addEventListener('DOMContentLoaded', checkHealth);
+    </script>
+</body>
+
+</html>
