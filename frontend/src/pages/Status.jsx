@@ -3,7 +3,7 @@ import { Server, Database, Key, CheckCircle, XCircle, RefreshCw } from 'lucide-r
 import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 const StatusCard = ({ title, icon: Icon, status, index }) => {
     const isOk = status === 'running' || status === 'available' || status === 'present';

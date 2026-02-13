@@ -3,7 +3,7 @@ import { Upload, FileText, Send, Bot, User, Loader2, Paperclip, X, Trash2 } from
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 const Home = () => {
     const [documents, setDocuments] = useState([]);
