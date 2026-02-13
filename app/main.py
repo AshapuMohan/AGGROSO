@@ -12,9 +12,13 @@ from app import storage, rag, health
 
 app = FastAPI(title="Private Knowledge Q&A")
 
+
+# Get allowed origins from env
+origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
