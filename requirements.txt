@@ -10,3 +10,4 @@ aiofiles
 pydantic
 pypdf
 python-docx
+pdfplumber

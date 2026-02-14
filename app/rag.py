@@ -36,15 +36,31 @@ def ingest_document(text: str, doc_name: str):
 
     for i in range(0, len(text), chunk_size - overlap):
         chunk = text[i:i + chunk_size]
-        chunks.append(chunk)
-        ids.append(f"{doc_name}_{i}")
-        metadatas.append({"source": doc_name})
+        if chunk.strip(): # Only add non-empty chunks
+            chunks.append(chunk)
+            ids.append(f"{doc_name}_{i}")
+            metadatas.append({"source": doc_name})
         
     print(f"[DEBUG] Created {len(chunks)} chunks.")
+    
+    if not chunks:
+        print("[WARNING] No valid chunks created. Skipping ingestion.")
+        return
         
     # Use PASSAGE embedding for storage
     try:
-        embeddings = [get_passage_embedding(chunk) for chunk in chunks]
+        if len(chunks) > 0:
+            print(f"[DEBUG] First chunk content (repr): {repr(chunks[0])}")
+            
+        embeddings = []
+        for i, chunk in enumerate(chunks):
+            try:
+                emb = get_passage_embedding(chunk)
+                embeddings.append(emb)
+            except Exception as e:
+                print(f"[ERROR] Failed to embed chunk {i}: {repr(chunk)}")
+                raise e
+                
         print(f"[DEBUG] Generated {len(embeddings)} embeddings.")
     except Exception as e:
         print(f"[ERROR] Embedding generation failed: {e}")

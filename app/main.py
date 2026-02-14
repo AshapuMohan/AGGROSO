@@ -44,6 +44,14 @@ def upload_document(file: UploadFile = File(...)):
     if not any(file.filename.lower().endswith(ext) for ext in allowed_exts):
         raise HTTPException(status_code=400, detail=f"Only {', '.join(allowed_exts)} files are supported.")
     
+    # Enforce Single Document Limit: Reset DB before adding new file
+    try:
+        reset_database()
+        print("[INFO] Database reset for new document upload.")
+    except Exception as e:
+        print(f"[ERROR] Failed to reset database during upload: {e}")
+        # Proceed anyway? Or fail? Let's proceed but log it.
+    
     # Save file
     try:
         file_path = storage.save_upload_file(file)
@@ -70,7 +78,13 @@ def upload_document(file: UploadFile = File(...)):
 
 @app.get("/documents")
 def get_documents():
-    return {"documents": storage.list_documents()}
+    try:
+        docs = storage.list_documents()
+        return {"documents": docs}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to list documents: {str(e)}")
 
 @app.delete("/reset")
 def reset_database():

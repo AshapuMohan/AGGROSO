@@ -11,14 +11,34 @@ def extract_text(file_path: str, filename: str) -> str:
             
     elif ext == ".pdf":
         try:
-            reader = PdfReader(file_path)
+            import pdfplumber
             text = ""
-            for page in reader.pages:
-                text += page.extract_text() + "\n"
-            print(f"[DEBUG] Extracted {len(text)} chars from PDF.")
-            return text
+            with pdfplumber.open(file_path) as pdf:
+                for page in pdf.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        text += page_text + "\n"
+            
+            cleaned_text = text.strip()
+            print(f"[DEBUG] Extracted {len(cleaned_text)} chars from PDF using pdfplumber.")
+            return cleaned_text
+        except ImportError:
+            print("[WARNING] pdfplumber not found, falling back to pypdf.")
+            try:
+                reader = PdfReader(file_path)
+                text = ""
+                for page in reader.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        text += page_text + "\n"
+                
+                cleaned_text = text.strip()
+                print(f"[DEBUG] Extracted {len(cleaned_text)} chars from PDF using pypdf.")
+                return cleaned_text
+            except Exception as e:
+                raise ValueError(f"Error reading PDF with pypdf: {str(e)}")
         except Exception as e:
-            raise ValueError(f"Error reading PDF: {str(e)}")
+            raise ValueError(f"Error reading PDF with pdfplumber: {str(e)}")
             
     elif ext == ".docx":
         try:

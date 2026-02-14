@@ -137,7 +137,7 @@ const Home = () => {
                             <Upload className="text-gray-400 group-hover:text-primary-600 mb-2 transition-colors" />
                         )}
                         <p className="text-sm font-medium text-gray-600">
-                            {isUploading ? "Processing..." : "Drop PDF/TXT here or click to upload"}
+                            {isUploading ? "Processing..." : "Drop PDF/TXT here (Replaces current)"}
                         </p>
                         {uploadStatus && <p className="text-xs mt-2 text-primary-600 font-semibold">{uploadStatus}</p>}
                     </div>
