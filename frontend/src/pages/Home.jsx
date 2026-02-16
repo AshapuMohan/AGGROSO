@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Upload, FileText, Send, Bot, User, Loader2, Paperclip, X, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Upload, FileText, Send, Bot, User, Loader2, Paperclip, Trash2, Sparkles, FileUp, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 
@@ -9,62 +9,52 @@ const Home = () => {
     const [documents, setDocuments] = useState([]);
     const [uploadStatus, setUploadStatus] = useState('');
     const [isUploading, setIsUploading] = useState(false);
+    const [isDragOver, setIsDragOver] = useState(false);
+    const messagesEndRef = useRef(null);
 
-    // Chat State
     const [messages, setMessages] = useState([
-        { role: 'assistant', content: 'Hello! I am your private knowledge assistant. Upload a document to get started or ask me anything about your existing files.' }
+        { role: 'assistant', content: 'Hello! I\'m your private knowledge assistant. Upload a document to get started, then ask me anything about it.' }
     ]);
     const [input, setInput] = useState('');
     const [isThinking, setIsThinking] = useState(false);
 
-    useEffect(() => {
-        loadDocuments();
-    }, []);
+    useEffect(() => { loadDocuments(); }, []);
+    useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isThinking]);
 
     const loadDocuments = async () => {
         try {
             const res = await fetch(`${API_BASE}/documents`);
             const data = await res.json();
             setDocuments(data.documents || []);
-        } catch (err) {
-            console.error("Failed to load docs", err);
-        }
+        } catch (err) { console.error("Failed to load docs", err); }
     };
 
     const handleUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-
         setIsUploading(true);
-        setUploadStatus('Uploading...');
-
+        setUploadStatus('Indexing document...');
         const formData = new FormData();
         formData.append('file', file);
-
         try {
             const res = await fetch(`${API_BASE}/upload`, { method: 'POST', body: formData });
             if (!res.ok) throw new Error('Upload failed');
-
             await res.json();
-            setUploadStatus('Success');
+            setUploadStatus('Indexed successfully');
             loadDocuments();
             setTimeout(() => setUploadStatus(''), 3000);
         } catch (err) {
-            setUploadStatus('Error');
-        } finally {
-            setIsUploading(false);
-        }
+            setUploadStatus('Upload failed');
+            setTimeout(() => setUploadStatus(''), 3000);
+        } finally { setIsUploading(false); }
     };
 
     const handleReset = async () => {
-        if (!window.confirm("Are you sure you want to clear all documents and history?")) return;
-
+        if (!window.confirm("Clear all documents and conversation history?")) return;
         try {
             await fetch(`${API_BASE}/reset`, { method: 'DELETE' });
             setDocuments([]);
-            setMessages([
-                { role: 'assistant', content: 'Knowledge base cleared. You can upload new documents now.' }
-            ]);
+            setMessages([{ role: 'assistant', content: 'Knowledge base cleared. Upload a new document to begin.' }]);
         } catch (err) {
             console.error("Failed to reset", err);
             alert("Failed to reset knowledge base.");
@@ -74,12 +64,10 @@ const Home = () => {
     const handleSend = async (e) => {
         e.preventDefault();
         if (!input.trim()) return;
-
         const userMsg = { role: 'user', content: input };
         setMessages(prev => [...prev, userMsg]);
         setInput('');
         setIsThinking(true);
-
         try {
             const res = await fetch(`${API_BASE}/ask`, {
                 method: 'POST',
@@ -87,80 +75,92 @@ const Home = () => {
                 body: JSON.stringify({ query: userMsg.content })
             });
             const data = await res.json();
-
-            const botMsg = {
-                role: 'assistant',
-                content: data.answer,
-                sources: data.sources
-            };
-            setMessages(prev => [...prev, botMsg]);
+            setMessages(prev => [...prev, { role: 'assistant', content: data.answer, sources: data.sources }]);
         } catch (err) {
-            setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I encountered an error." }]);
-        } finally {
-            setIsThinking(false);
-        }
+            setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I encountered an error. Please try again." }]);
+        } finally { setIsThinking(false); }
     };
 
     return (
-        <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-6rem)]">
-            {/* Left Panel: Documents */}
+        <div className="flex flex-col lg:flex-row gap-5 h-[calc(100vh-7.5rem)]">
+
+            {/* ─── Left Panel: Documents ─── */}
             <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="w-full lg:w-1/3 flex flex-col gap-4 bg-white rounded-2xl shadow-sm border border-gray-100 p-6"
+                transition={{ duration: 0.4 }}
+                className="w-full lg:w-[340px] xl:w-[380px] flex flex-col gap-4 rounded-2xl p-5 border-glow bg-surface-800/60 backdrop-blur-xl shrink-0"
             >
                 <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                        <FileText className="text-primary-600" /> Documents
+                    <h2 className="font-display text-lg font-bold text-text-primary flex items-center gap-2.5">
+                        <div className="p-1.5 rounded-lg border border-accent-500/15" style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.1), rgba(217,119,6,0.05))' }}>
+                            <FileText size={16} className="text-accent-400" />
+                        </div>
+                        Documents
                     </h2>
                     <button
                         onClick={handleReset}
-                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-2 rounded-lg text-text-muted hover:text-danger-400 hover:bg-danger-500/10 transition-all duration-200"
                         title="Clear Knowledge Base"
                     >
-                        <Trash2 size={18} />
+                        <Trash2 size={16} />
                     </button>
                 </div>
 
-                {/* Upload Area */}
-                <div className="relative group border-2 border-dashed border-gray-200 rounded-xl hover:border-primary-400 transition-colors bg-gray-50 hover:bg-primary-50">
-                    <input
-                        type="file"
-                        onChange={handleUpload}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        disabled={isUploading}
-                    />
-                    <div className="flex flex-col items-center justify-center py-8 text-center px-4">
+                {/* Upload Dropzone */}
+                <div
+                    className={cn(
+                        "relative group rounded-xl transition-all duration-300 overflow-hidden",
+                        isDragOver
+                            ? "border-2 border-accent-400 bg-accent-500/8"
+                            : "border-2 border-dashed border-surface-300/30 hover:border-accent-500/25 bg-surface-600/30 hover:bg-accent-500/[0.03]"
+                    )}
+                    onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                    onDragLeave={() => setIsDragOver(false)}
+                    onDrop={(e) => { e.preventDefault(); setIsDragOver(false); }}
+                >
+                    <input type="file" onChange={handleUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" disabled={isUploading} accept=".txt,.pdf,.docx" />
+                    <div className="flex flex-col items-center justify-center py-7 px-4 text-center">
                         {isUploading ? (
-                            <Loader2 className="animate-spin text-primary-600 mb-2" />
+                            <Loader2 className="animate-spin text-accent-400 mb-2" size={24} />
                         ) : (
-                            <Upload className="text-gray-400 group-hover:text-primary-600 mb-2 transition-colors" />
+                            <div className="p-3 rounded-xl bg-surface-500/30 group-hover:bg-accent-500/10 transition-all duration-300 mb-2">
+                                <FileUp className="text-text-muted group-hover:text-accent-400 transition-colors duration-300" size={22} />
+                            </div>
                         )}
-                        <p className="text-sm font-medium text-gray-600">
-                            {isUploading ? "Processing..." : "Drop PDF/TXT here (Replaces current)"}
+                        <p className="text-sm font-medium text-text-secondary mt-1">
+                            {isUploading ? "Processing document..." : "Drop PDF, TXT or DOCX"}
                         </p>
-                        {uploadStatus && <p className="text-xs mt-2 text-primary-600 font-semibold">{uploadStatus}</p>}
+                        <p className="text-xs text-text-muted mt-1">{isUploading ? "" : "Replaces existing document"}</p>
+                        {uploadStatus && (
+                            <motion.p
+                                initial={{ opacity: 0, y: 4 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className={cn(
+                                    "text-xs mt-2 font-semibold px-3 py-1 rounded-full",
+                                    uploadStatus.includes('failed') ? "text-danger-400 bg-danger-500/10" : "text-success-400 bg-success-500/10"
+                                )}
+                            >{uploadStatus}</motion.p>
+                        )}
                     </div>
                 </div>
 
                 {/* File List */}
-                <div className="flex-1 overflow-y-auto pr-2 space-y-2">
+                <div className="flex-1 overflow-y-auto space-y-2 pr-1">
                     <AnimatePresence>
                         {documents.length === 0 ? (
-                            <p className="text-gray-400 text-sm italic text-center mt-4">No documents yet.</p>
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-8 text-center">
+                                <div className="p-3 rounded-xl bg-surface-500/20 mb-3"><FileText size={20} className="text-text-muted" /></div>
+                                <p className="text-text-muted text-sm">No documents yet</p>
+                                <p className="text-text-muted text-xs mt-1">Upload a file to begin</p>
+                            </motion.div>
                         ) : (
                             documents.map((doc, idx) => (
-                                <motion.div
-                                    key={doc}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: idx * 0.05 }}
-                                    className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100 group hover:border-primary-200 transition-all"
+                                <motion.div key={doc} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
+                                    className="flex items-center gap-3 p-3 rounded-xl bg-surface-600/30 border border-white/[0.04] group hover:border-accent-500/15 hover:bg-surface-500/30 transition-all duration-200"
                                 >
-                                    <div className="p-2 bg-white rounded-md shadow-sm text-primary-600">
-                                        <FileText size={16} />
-                                    </div>
-                                    <span className="text-sm font-medium text-gray-700 truncate flex-1">{doc}</span>
+                                    <div className="p-2 rounded-lg bg-surface-500/40 text-accent-400 group-hover:bg-accent-500/10 transition-colors"><FileText size={14} /></div>
+                                    <span className="text-sm font-medium text-text-secondary truncate flex-1 group-hover:text-text-primary transition-colors">{doc}</span>
                                 </motion.div>
                             ))
                         )}
@@ -168,53 +168,59 @@ const Home = () => {
                 </div>
             </motion.div>
 
-            {/* Right Panel: Chat */}
+            {/* ─── Right Panel: Chat ─── */}
             <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.1 }}
-                className="flex-1 flex flex-col bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+                transition={{ duration: 0.4, delay: 0.1 }}
+                className="flex-1 flex flex-col rounded-2xl border-glow bg-surface-800/60 backdrop-blur-xl overflow-hidden min-h-0"
             >
-                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 backdrop-blur">
-                    <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                        <Bot className="text-primary-600" /> Assistant
+                {/* Chat Header */}
+                <div className="px-5 py-3.5 border-b border-white/[0.04] flex justify-between items-center bg-surface-700/30 shrink-0">
+                    <h2 className="font-display text-base font-bold text-text-primary flex items-center gap-2.5">
+                        <div className="p-1.5 rounded-lg border border-accent-500/15" style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.1), rgba(217,119,6,0.05))' }}>
+                            <MessageCircle size={16} className="text-accent-400" />
+                        </div>
+                        Assistant
                     </h2>
-                    <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full font-medium">Online</span>
+                    <div className="flex items-center gap-2">
+                        <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success-400 opacity-50" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-success-500" />
+                        </span>
+                        <span className="text-xs text-success-400 font-medium">Online</span>
+                    </div>
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <div className="flex-1 overflow-y-auto p-5 space-y-5 min-h-0">
                     {messages.map((msg, idx) => (
-                        <motion.div
-                            key={idx}
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className={cn(
-                                "flex gap-4 max-w-[85%]",
-                                msg.role === 'user' ? "ml-auto flex-row-reverse" : ""
-                            )}
+                        <motion.div key={idx} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+                            className={cn("flex gap-3 max-w-[88%]", msg.role === 'user' ? "ml-auto flex-row-reverse" : "")}
                         >
                             <div className={cn(
-                                "w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm",
-                                msg.role === 'user' ? "bg-primary-600 text-white" : "bg-white border border-gray-200 text-primary-600"
-                            )}>
-                                {msg.role === 'user' ? <User size={16} /> : <Bot size={16} />}
+                                "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
+                                msg.role === 'user'
+                                    ? "text-surface-900 shadow-[0_0_12px_rgba(245,158,11,0.2)]"
+                                    : "bg-surface-500/40 border border-white/[0.06] text-accent-400"
+                            )} style={msg.role === 'user' ? { background: 'linear-gradient(135deg, #f59e0b, #d97706)' } : {}}>
+                                {msg.role === 'user' ? <User size={14} /> : <Bot size={14} />}
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="space-y-2 min-w-0">
                                 <div className={cn(
-                                    "p-4 rounded-2xl shadow-sm text-sm leading-relaxed",
+                                    "p-4 rounded-2xl text-sm leading-relaxed",
                                     msg.role === 'user'
-                                        ? "bg-primary-600 text-white rounded-tr-sm"
-                                        : "bg-gray-50 border border-gray-100 text-gray-800 rounded-tl-sm"
-                                )}>
+                                        ? "text-surface-900 rounded-tr-md shadow-[0_4px_15px_rgba(245,158,11,0.15)]"
+                                        : "bg-surface-600/40 border border-white/[0.04] text-text-primary rounded-tl-md"
+                                )} style={msg.role === 'user' ? { background: 'linear-gradient(135deg, #f59e0b, #d97706)' } : {}}>
                                     {msg.content}
                                 </div>
                                 {msg.sources && msg.sources.length > 0 && (
-                                    <div className="flex flex-wrap gap-2">
+                                    <div className="flex flex-wrap gap-1.5">
                                         {msg.sources.map((src, i) => (
-                                            <span key={i} className="text-xs px-2 py-1 bg-gray-100 text-gray-500 rounded-md border border-gray-200 flex items-center gap-1">
-                                                <Paperclip size={10} /> {src}
+                                            <span key={i} className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-surface-500/30 border border-white/[0.04] text-text-muted hover:text-accent-300 hover:border-accent-500/15 transition-colors cursor-default">
+                                                <Paperclip size={10} className="text-accent-500/50" /> {src}
                                             </span>
                                         ))}
                                     </div>
@@ -222,40 +228,34 @@ const Home = () => {
                             </div>
                         </motion.div>
                     ))}
+
                     {isThinking && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="flex gap-4"
-                        >
-                            <div className="w-8 h-8 rounded-full bg-white border border-gray-200 text-primary-600 flex items-center justify-center shrink-0 shadow-sm">
-                                <Bot size={16} />
-                            </div>
-                            <div className="bg-gray-50 border border-gray-100 p-4 rounded-2xl rounded-tl-sm flex gap-1 items-center">
-                                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-surface-500/40 border border-white/[0.06] text-accent-400 flex items-center justify-center shrink-0"><Bot size={14} /></div>
+                            <div className="bg-surface-600/40 border border-white/[0.04] p-4 rounded-2xl rounded-tl-md flex gap-1.5 items-center">
+                                <span className="w-2 h-2 bg-accent-400/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                <span className="w-2 h-2 bg-accent-400/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                <span className="w-2 h-2 bg-accent-400/30 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                             </div>
                         </motion.div>
                     )}
+                    <div ref={messagesEndRef} />
                 </div>
 
-                {/* Input */}
-                <div className="p-4 bg-white border-t border-gray-100">
-                    <form onSubmit={handleSend} className="relative flex items-center gap-2">
+                {/* Input Bar */}
+                <div className="p-4 bg-surface-700/20 border-t border-white/[0.04] shrink-0">
+                    <form onSubmit={handleSend} className="relative flex items-center gap-3">
                         <input
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder="Ask a question about your documents..."
-                            className="w-full pl-4 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm"
+                            placeholder="Ask about your documents..."
+                            className="w-full pl-4 pr-14 py-3.5 bg-surface-600/40 border border-white/[0.06] rounded-xl text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-500/30 focus:shadow-[0_0_0_3px_rgba(245,158,11,0.06)] transition-all duration-200"
                         />
-                        <button
-                            type="submit"
-                            disabled={!input.trim() || isThinking}
-                            className="absolute right-2 p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                        <button type="submit" disabled={!input.trim() || isThinking}
+                            className="absolute right-2 p-2.5 rounded-lg text-surface-900 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 btn-primary disabled:shadow-none disabled:transform-none"
                         >
-                            <Send size={16} />
+                            <Send size={15} />
                         </button>
                     </form>
                 </div>
